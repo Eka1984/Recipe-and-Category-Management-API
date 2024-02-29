@@ -34,6 +34,8 @@ def categories_handler():
     # db-tiedoston connect_to_db-funktion yläpuolella
     with connect_to_db() as cnx: # cnx on yieldattu yhteys
 
+        #tämä on muutos, joka laitetaan githubiin
+
         if request.method == 'GET':
 
             try:
