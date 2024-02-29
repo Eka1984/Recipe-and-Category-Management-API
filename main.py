@@ -18,14 +18,35 @@ def categories():
             return render_template('error.html', str(e))
 
 
-@webserver.route('/api/categories/<category_id>')
+@webserver.route('/api/categories/<category_id>', methods=['GET', 'PUT', 'DELETE'])
 def category_handler(category_id):
     with connect_to_db() as cnx:
-        try:
-            category = data.categories.get_category_by_id(cnx, category_id)
-            return jsonify({'category': category})
-        except Exception as e:
-            return jsonify({'err': str(e)}), 404
+        if request.method == 'GET':
+            try:
+                category = data.categories.get_category_by_id(cnx, category_id)
+                return jsonify({'category': category})
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
+
+        elif request.method == 'PUT':
+            try:
+                req_body = request.get_json()
+                category = data.categories.get_category_by_id(cnx, category_id)
+                data.categories.update_category_by_id(cnx, category, req_body)
+                return jsonify({'category': {
+                    'id': category['id'],
+                    'name': req_body['name']
+                }})
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
+        elif request.method == 'DELETE':
+            try:
+                affected_rows = data.categories.delete_category_by_id(cnx, category_id)
+                if affected_rows == 0:
+                    return jsonify({'err': 'category not found'}), 404
+                return "", 200
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
 
 @webserver.route('/api/categories', methods=['POST', 'GET'])
 def categories_handler():
@@ -45,9 +66,13 @@ def categories_handler():
                 return jsonify({"error": str(e)}), 500
 
         elif request.method == 'POST':
-            req_body = request.get_json()
-            print(req_body)
-            return ""
+            try:
+                req_body = request.get_json()
+                category = data.categories.insert_category(cnx, req_body)
+                return jsonify(category)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
 
 
     # täällä tietokanta yhteys on automaattisesti suljettu, eikä se ole enää käytössä
