@@ -53,7 +53,7 @@ def insert_category(cnx, request_data):
         cursor.execute(_query, (request_data['name'],))
         # jokainen muokkaava kysely pitää vahvistaa (commitoida)
         cnx.commit()
-        new_category =  {'id': cursor.lastrowid, 'name': request_data['name']}
+        new_category = {'id': cursor.lastrowid, 'name': request_data['name']}
         cursor.close()
         return new_category
     except Exception as e:

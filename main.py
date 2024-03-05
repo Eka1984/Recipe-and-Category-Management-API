@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 import data.categories
+import data.recipes
 from db import connect_to_db
 
 webserver = Flask(__name__)
@@ -69,6 +70,26 @@ def categories_handler():
             try:
                 req_body = request.get_json()
                 category = data.categories.insert_category(cnx, req_body)
+                return jsonify(category)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+@webserver.route('/api/categories/<category_id>/recipes', methods=['POST', 'GET'])
+def recipes_handler(category_id):
+
+    with connect_to_db() as cnx:
+
+        if request.method == 'GET':
+            try:
+                recipes = data.recipes.get_recipes_by_category_id(cnx, category_id)
+                return recipes
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        elif request.method == 'POST':
+            try:
+                req_body = request.get_json()
+                category = data.recipes.insert_recipe_into_category(cnx, req_body, category_id)
                 return jsonify(category)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
