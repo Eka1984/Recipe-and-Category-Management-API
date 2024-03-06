@@ -94,6 +94,37 @@ def recipes_handler(category_id):
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
+@webserver.route('/api/recipes/<recipe_id>', methods=['GET', 'PUT', 'DELETE'])
+def recipe_handler(recipe_id):
+    with connect_to_db() as cnx:
+        if request.method == 'GET':
+            try:
+                recipe = data.recipes.get_recipe_by_id(cnx, recipe_id)
+                return jsonify({'recipe': recipe})
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
+
+        elif request.method == 'PUT':
+            try:
+                req_body = request.get_json()
+                recipe = data.recipes.get_recipe_by_id(cnx, recipe_id)
+                data.recipes.update_recipe_by_id(cnx, recipe, req_body)
+                return jsonify({'recipe': {
+                    'id': recipe['id'],
+                    'name': req_body['name'],
+                    'description': req_body['description']
+                }})
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
+        elif request.method == 'DELETE':
+            try:
+                affected_rows = data.recipes.delete_recipe_by_id(cnx, recipe_id)
+                if affected_rows == 0:
+                    return jsonify({'err': 'category not found'}), 404
+                return "", 200
+            except Exception as e:
+                return jsonify({'err': str(e)}), 404
+
 
 
     # täällä tietokanta yhteys on automaattisesti suljettu, eikä se ole enää käytössä

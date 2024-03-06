@@ -49,3 +49,46 @@ def insert_recipe_into_category(cnx, request_data, category_id):
         cnx.rollback()
         print(e)
         raise e
+
+def get_recipe_by_id(cnx, recipe_id):
+    cursor = cnx.cursor()
+    _query = "SELECT * FROM recipe WHERE id = (%s)"
+    cursor.execute(_query, (recipe_id,))
+    recipe = cursor.fetchone()
+    cursor.close()
+    if recipe is None:
+        raise Exception('recipe not found')
+
+    return {
+        'id': recipe[0],
+        'name': recipe[1],
+        'description': recipe[2],
+        'created_at': recipe[3],
+        'deleted_at': recipe[4],
+        'user_id': recipe[5],
+        'category_id': recipe[6],
+        'state_id': recipe[7]
+    }
+
+def update_recipe_by_id(cnx, recipe, request_body):
+    try:
+        cursor = cnx.cursor()
+        _query = "UPDATE recipe SET name = (%s), description = (%s) WHERE id = (%s)"
+        cursor.execute(_query, (request_body['name'], request_body['description'], recipe['id']))
+        cnx.commit()
+    except Exception as e:
+        cnx.rollback()
+        raise e
+
+def delete_recipe_by_id(cnx, recipe_id):
+    try:
+        cursor = cnx.cursor()
+        _query = "DELETE FROM recipe WHERE id = (%s)"
+        cursor.execute(_query, (recipe_id,))
+        cnx.commit()
+        affected = cursor.rowcount
+        cursor.close()
+        return affected
+    except Exception as e:
+        cnx.rollback()
+        raise e
