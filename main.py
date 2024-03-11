@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import data.categories
 import data.recipes
+import data.users
 from db import connect_to_db
 
 webserver = Flask(__name__)
@@ -18,6 +19,12 @@ def categories():
         except Exception as e:
             return render_template('error.html', str(e))
 
+@webserver.route('/api/register', methods=['POST'])
+def register():
+    with connect_to_db() as cnx:
+        req_body = request.get_json()
+        user = data.users.register(cnx, req_body)
+        return ""
 
 @webserver.route('/api/categories/<category_id>', methods=['GET', 'PUT', 'DELETE'])
 def category_handler(category_id):
