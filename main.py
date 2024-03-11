@@ -22,9 +22,12 @@ def categories():
 @webserver.route('/api/register', methods=['POST'])
 def register():
     with connect_to_db() as cnx:
-        req_body = request.get_json()
-        user = data.users.register(cnx, req_body)
-        return ""
+        try:
+            req_body = request.get_json()
+            user = data.users.register(cnx, req_body)
+            return jsonify(user)
+        except Exception as e:
+            return jsonify({'err': str(e)}), 500
 
 @webserver.route('/api/categories/<category_id>', methods=['GET', 'PUT', 'DELETE'])
 def category_handler(category_id):
