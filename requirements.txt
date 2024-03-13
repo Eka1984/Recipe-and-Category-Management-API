@@ -2,3 +2,4 @@ flask
 mysql
 mysql-connector-python
 passlib
+pyjwt
