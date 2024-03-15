@@ -107,6 +107,18 @@ def login():
         except Exception as e:
             return jsonify({'err': str(e)}), 500
 
+@webserver.route('/api/logout', methods=['POST'], endpoint='logout')
+@get_db_connect
+@require_login
+def logout(cnx, logged_in_user):
+    print(logged_in_user)
+    try:
+        data.users.logout(cnx, logged_in_user)
+        return "", 200
+    except Exception as e:
+        return jsonify({'err': str(e)}), 500
+
+
 @webserver.route('/api/register', methods=['POST'])
 def register():
     with connect_to_db() as cnx:

@@ -6,6 +6,16 @@ from passlib.hash import pbkdf2_sha512 as pl
 
 SECRET = 'gfdgfd54353fgfdgf54gfdg5f4545dfgdf3545fgdff543dfgdfg343hte34dfggfdgd546815'
 
+def logout(cnx, logged_in_user):
+    try:
+        cursor = cnx.cursor()
+        _query = "UPDATE users SET access_jti = NULL WHERE id = (%s)"
+        cursor.execute(_query, (logged_in_user['id'],))
+        cnx.commit()
+    except Exception as e:
+        cnx.rollback()
+        raise e
+
 def login(cnx, req_body):
     try:
         # 1. haetaan käyttäjä userbamen perusteella
