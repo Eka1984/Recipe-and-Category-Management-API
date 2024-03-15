@@ -207,8 +207,28 @@ def print_recipes_by_category(category_id):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+@webserver.route('/api/recipes/<recipe_id>', methods=['DELETE'], endpoint='delete_recipe')
+@get_db_connect
+@require_login
+def delete_recipe(cnx, logged_in_user, recipe_id):
+    try:
+        is_admin = logged_in_user['role'] == 4
 
-@webserver.route('/api/recipes/<recipe_id>', methods=['GET', 'PUT', 'DELETE'])
+        recipe = data.recipes.get_recipe_by_id(cnx, recipe_id)
+        is_owner = logged_in_user['id'] == recipe['user_id']
+
+        if is_admin or is_owner:
+            affected_rows = data.recipes.delete_recipe_by_id(cnx, recipe_id)
+            if affected_rows == 0:
+                return jsonify({'err': 'category not found'}), 404
+            return "", 200
+        else:
+            return jsonify({'err': 'Forbidden'}), 403
+
+    except Exception as e:
+        return jsonify({'err': str(e)}), 404
+
+@webserver.route('/api/recipes/<recipe_id>', methods=['GET', 'PUT'])
 def recipe_handler(recipe_id):
     with connect_to_db() as cnx:
         if request.method == 'GET':
@@ -228,14 +248,6 @@ def recipe_handler(recipe_id):
                     'name': req_body['name'],
                     'description': req_body['description']
                 }})
-            except Exception as e:
-                return jsonify({'err': str(e)}), 404
-        elif request.method == 'DELETE':
-            try:
-                affected_rows = data.recipes.delete_recipe_by_id(cnx, recipe_id)
-                if affected_rows == 0:
-                    return jsonify({'err': 'category not found'}), 404
-                return "", 200
             except Exception as e:
                 return jsonify({'err': str(e)}), 404
 
