@@ -20,8 +20,8 @@ def get_recipes_by_category_id(cnx, category_id):
     cursor.close()
     return recipes_list
 
-def insert_recipe_into_category(cnx, request_data, category_id):
-    user_id = 5147
+def insert_recipe_into_category(cnx, request_data, category_id, user_id):
+    # user_id = 5147
     state_id = 2
 
     current_datetime = datetime.now()

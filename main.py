@@ -184,25 +184,29 @@ def categories_handler():
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-@webserver.route('/api/categories/<category_id>/recipes', methods=['POST', 'GET'])
-def recipes_handler(category_id):
+@webserver.route('/api/categories/<category_id>/recipes', methods=['POST'], endpoint='add_recipe')
+@get_db_connect
+@require_login
+def add_recipe(cnx, logged_in_user, category_id):
+    try:
+        user_id = logged_in_user['id']
+        req_body = request.get_json()
+        recipe = data.recipes.insert_recipe_into_category(cnx, req_body, category_id, user_id)
+        return jsonify(recipe)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@webserver.route('/api/categories/<category_id>/recipes', methods=['GET'], endpoint='print_recipes_by_category')
+def print_recipes_by_category(category_id):
 
     with connect_to_db() as cnx:
+        try:
+            recipes = data.recipes.get_recipes_by_category_id(cnx, category_id)
+            return recipes
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
-        if request.method == 'GET':
-            try:
-                recipes = data.recipes.get_recipes_by_category_id(cnx, category_id)
-                return recipes
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-
-        elif request.method == 'POST':
-            try:
-                req_body = request.get_json()
-                category = data.recipes.insert_recipe_into_category(cnx, req_body, category_id)
-                return jsonify(category)
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
 
 @webserver.route('/api/recipes/<recipe_id>', methods=['GET', 'PUT', 'DELETE'])
 def recipe_handler(recipe_id):
