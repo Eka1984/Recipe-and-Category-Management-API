@@ -9,34 +9,81 @@ webserver = Flask(__name__)
 
 #http://localhost:3000/categories
 
-@webserver.route('/api/account')
-def get_account():
-    with connect_to_db() as cnx:
+def get_db_connect(route_handler):
+    def wrapper(*args, **kwargs):
+        with connect_to_db() as cnx:
+            return route_handler(cnx, *args, **kwargs)
+    return wrapper
+
+
+def require_login(route_handler):
+    def wrapper(cnx, *args, **kwargs):
         try:
             auth_header = request.headers.get('Authorization')
             if auth_header is None:
-                return jsonify({'err': 'Unauthorized'}), 401
+                return jsonify({'err': 'Unauthorized1'}), 401
 
             token_parts = auth_header.split(' ')
             if len(token_parts) != 2:
-                return jsonify({'err': 'Unauthorized'}), 401
+                return jsonify({'err': 'Unauthorized2'}), 401
 
             if token_parts[0] != 'Bearer':
-                return jsonify({'err': 'Unauthorized'}), 401
+                return jsonify({'err': 'Unauthorized3'}), 401
 
             token = token_parts[1]
             payload = jwt.decode(token, data.users.SECRET, algorithms=['HS256'])
 
-            cursor = cnx.cursor()
-            cursor.execute('SELECT id, username, auth_role_id FROM users WHERE access_jti = (%s)', (payload['sub'],))
-            account = cursor.fetchone()
-            if account is None:
-                return jsonify({'err': 'Unauthorized'}), 401
-            return {'account': {'id': account[0], 'username': account[1], 'role_id': account[2]}}
+            logged_in_user = data.users.get_logged_in_user(cnx, payload['sub'])
 
+            return route_handler(cnx, logged_in_user, *args, **kwargs)
 
         except Exception as e:
-            return jsonify({'err': str(e)})
+            print(e)
+            return jsonify({'err': 'Unauthorized4'}), 401
+    return wrapper
+
+def require_role(role_id):
+    def decorator(route_handler):
+        def wrapper(cnx, logged_in_user, *args, **kwargs):
+            if logged_in_user['role'] == role_id:
+                return route_handler(cnx, logged_in_user, *args, **kwargs)
+            return jsonify({'err': 'Forbidden'}), 403
+
+        return wrapper
+    return decorator
+
+@webserver.route('/api/account')
+@get_db_connect
+@require_login
+def get_account(cnx, logged_in_user):
+    return jsonify({'account': logged_in_user})
+
+    # with connect_to_db() as cnx:
+    #     try:
+    #         auth_header = request.headers.get('Authorization')
+    #         if auth_header is None:
+    #             return jsonify({'err': 'Unauthorized'}), 401
+    #
+    #         token_parts = auth_header.split(' ')
+    #         if len(token_parts) != 2:
+    #             return jsonify({'err': 'Unauthorized'}), 401
+    #
+    #         if token_parts[0] != 'Bearer':
+    #             return jsonify({'err': 'Unauthorized'}), 401
+    #
+    #         token = token_parts[1]
+    #         payload = jwt.decode(token, data.users.SECRET, algorithms=['HS256'])
+    #
+    #         cursor = cnx.cursor()
+    #         cursor.execute('SELECT id, username, auth_role_id FROM users WHERE access_jti = (%s)', (payload['sub'],))
+    #         account = cursor.fetchone()
+    #         if account is None:
+    #             return jsonify({'err': 'Unauthorized'}), 401
+    #         return {'account': {'id': account[0], 'username': account[1], 'role_id': account[2]}}
+    #
+    #
+    #     except Exception as e:
+    #         return jsonify({'err': str(e)})
 
 
 @webserver.route('/categories')
@@ -69,6 +116,18 @@ def register():
             return jsonify(user)
         except Exception as e:
             return jsonify({'err': str(e)}), 500
+
+@webserver.route('/api/users/<user_id>', methods=['DELETE'], endpoint='delete_user')
+# tämä on yksi tapa tehdä pythonissa ns. dependency injection
+@get_db_connect
+@require_login
+@require_role(4)
+def delete_user(cnx, logged_in_user, user_id):
+    try:
+        data.users.remove_user_by_id(cnx, user_id)
+        return ""
+    except Exception as e:
+        return jsonify({'err': str(e)}), 500
 
 @webserver.route('/api/categories/<category_id>', methods=['GET', 'PUT', 'DELETE'])
 def category_handler(category_id):
