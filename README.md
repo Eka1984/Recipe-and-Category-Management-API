@@ -1,5 +1,3 @@
-# Flask-based API project
-
 ## Demo
 
 This project is a web server built using Flask for managing categories and recipes. It includes user authentication with JWT, database interactions, and role-based access control. The project demonstrates the use of various Flask features and best practices, including:
